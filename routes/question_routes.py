@@ -224,9 +224,11 @@ async def ask_ai(data: dict):
     prompt = (
         "Responde de manera técnica y concisa en español. "
         "La respuesta debe tener menos de 500 palabras. Si se trata de código hasta 1000 máximo. "
-        "No uses etiquetas como <think> o explicaciones sobre cómo llegaste a la respuesta. "
+        "La respuesta no debe tener explicaciones del pensamiento que tienes al resolver la duda. "
+        "todas las lineas de texto de la respuesta no deben tener espacios en blanco al inicio, no importa si estan bajo identacion de una lista ni nada "
         "Para formatear la respuesta correctamente en Markdown, sigue estrictamente estas reglas:\n\n"
         "- Usa *negrita* para destacar palabras o frases clave.\n"
+        "- Usa **mini titulos** para destacar mini titulos.\n"
         "- Usa _cursiva_ para enfatizar términos importantes.\n"
         "- Usa [texto](url) para incluir enlaces.\n"
         "- Usa >  al inicio para citas o comentarios importantes.\n"
