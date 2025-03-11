@@ -15,8 +15,8 @@ class User(BaseModel):
     studyArea: str
     email: EmailStr
     password: str
-    activeQuestions: int = 0
-    answeredQuestions: int = 0
+    activeQuestions: List[str] = []
+    answeredQuestions: List[str] = []
     activeOwnForums: List[str] = []
     activeAllForums: List[str] = []
     savedProjects: List[str] = []

@@ -1,6 +1,10 @@
 from fastapi import APIRouter, HTTPException
 from database import db
 from models.user_model import User
+from models.forum_model import Forum
+from models.project_model import Project
+from models.resource_model import Resource
+from models.question_model import Question
 from models.user_model import LoginRequest
 from models.user_model import VerifyEmail
 from typing import List
@@ -32,6 +36,45 @@ async def register_user(user: User):
 
     raise HTTPException(status_code=400, detail="Error al crear usuario")
 
+@router.get("/profile/{id}", response_model=User)
+async def get_user_profile(id: str):
+    user = db.Users.find_one({"_id": ObjectId(id)})
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    user["_id"] = str(user["_id"])
+
+    def get_documents_by_ids(collection, ids, projection=None):
+        if not ids:
+            return []
+        query = {"_id": {"$in": [ObjectId(i) for i in ids]}}
+        return list(db[collection].find(query, projection))
+
+    active_questions = get_documents_by_ids("Questions", user.get("activeQuestions", []), {"_id": 1, "title": 1, "textContent": 1, "date": 1})
+    answered_questions = get_documents_by_ids("Questions", user.get("answeredQuestions", []), {"_id": 1, "title": 1, "textContent": 1, "date": 1})
+    active_forums = get_documents_by_ids("Forums", user.get("activeAllForums", []), {"_id": 1, "creator": 1, "title": 1, "usersCount": 1, "likeCount": 1})
+    saved_projects = get_documents_by_ids("Projects", user.get("savedProjects", []))
+    saved_resources = get_documents_by_ids("Resources", user.get("savedResources", []))
+
+    def convert_ids_to_str(documents):
+        for doc in documents:
+            doc["_id"] = str(doc["_id"])
+        return documents
+
+    response_data = {
+        "user": user,
+        "activeQuestions": convert_ids_to_str(active_questions),
+        "answeredQuestions": convert_ids_to_str(answered_questions),
+        "activeForums": convert_ids_to_str(active_forums),
+        "savedProjects": convert_ids_to_str(saved_projects),
+        "savedResources": convert_ids_to_str(saved_resources)
+    }
+
+    return JSONResponse(
+        status_code=200,
+        content={"message": "Perfil obtenido correctamente", "data": response_data}
+    )
 
 @router.post("/verify_user")
 async def verify_if_user_exist(user: VerifyEmail):

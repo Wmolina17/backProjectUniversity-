@@ -14,6 +14,7 @@ class Message(BaseModel):
     img: str
 
 class Forum(BaseModel):
+    creator: Dict[str, ActiveUser] = {}
     title: str
     description: str
     creationDate: datetime

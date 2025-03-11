@@ -15,7 +15,7 @@ def get_all_questions():
     questions = list(db.Questions.find())
 
     if not questions:
-        return JSONResponse(status_code=404, content={"message": "No se encontraron preguntas."})
+        return JSONResponse(status_code=200, content={"message": "No se encontraron preguntas.", "questions": 0})
 
     for question in questions:
         question["_id"] = str(question["_id"])
@@ -68,6 +68,13 @@ def add_question(question: Question):
     }
 
     inserted_question = db.Questions.insert_one(new_question)
+    question_id_str = str(inserted_question.inserted_id)
+
+    db.Users.update_one(
+        {"_id": ObjectId(question.userId)},
+        {"$push": {"activeQuestions": question_id_str}}
+    )
+    
     new_question["_id"] = str(inserted_question.inserted_id)
 
     return JSONResponse(
@@ -163,6 +170,11 @@ def add_answer_to_question(question_id: str, answer: Answer):
             status_code=404,
             content={"message": "Pregunta no encontrada."}
         )
+    
+    db.Users.update_one(
+        {"_id": ObjectId(answer.userId)},
+        {"$push": {"answeredQuestions": question_id}}
+    )
 
     new_answer = answer.dict()
     db.Questions.update_one(
