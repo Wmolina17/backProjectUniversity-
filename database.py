@@ -10,7 +10,7 @@ DB_NAME = os.getenv("DB_NAME", "mi_app_db")
 client = MongoClient(MONGO_URI)
 db = client[DB_NAME]
 
-collections = ["Users", "Questions", "Forums", "Resources", "Projects"]
+collections = ["Users", "Questions", "Forums", "Resources"]
 
 for collection in collections:
     if collection not in db.list_collection_names():

@@ -3,3 +3,8 @@ uvicorn
 pymongo
 python-dotenv
 pydantic[email]
+websockets
+passlib[bcrypt]
+requests
+bson
+pytz

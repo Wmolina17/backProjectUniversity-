@@ -20,7 +20,7 @@ def get_all_questions():
     for question in questions:
         question["_id"] = str(question["_id"])
         
-        user = db.Users.find_one({"_id": ObjectId(question["userId"])}, {"fullname": 1, "activeQuestions": 1, "answeredQuestions": 1})
+        user = db.Users.find_one({"_id": ObjectId(question["userId"])}, {"fullname": 1, "activeQuestions": 1, "answeredQuestions": 1, "imgBase64": 1})
         user["_id"] = str(user["_id"])
         question["user"] = user if user else {}
 
@@ -101,7 +101,7 @@ def get_question_by_id(question_id: str):
 
     user = db.Users.find_one(
         {"_id": ObjectId(question["userId"])},
-        {"fullname": 1, "activeQuestions": 1, "answeredQuestions": 1}
+        {"fullname": 1, "activeQuestions": 1, "answeredQuestions": 1, "imgBase64": 1}
     )
 
     if user:
@@ -117,7 +117,7 @@ def get_question_by_id(question_id: str):
         for ans in question["answers"]:
             user = db.Users.find_one(
                 {"_id": ObjectId(ans["userId"])},
-                {"fullname": 1, "answeredQuestions": 1}
+                {"fullname": 1, "answeredQuestions": 1, "imgBase64": 1}
             )
             
             user["_id"] = str(user["_id"])
@@ -132,34 +132,7 @@ def get_question_by_id(question_id: str):
         status_code=200,
         content={"message": "Detalle de la pregunta obtenido exitosamente.", "question": question}
     )
-
-
-@router.get("/questions/user/{user_id}")
-def get_questions_by_user(user_id: str):
-    questions = list(db.Questions.find({"userId": user_id}))
-
-    if not questions:
-        return JSONResponse(
-            status_code=404,
-            content={"message": f"No se encontraron preguntas para el usuario {user_id}."}
-        )
-
-    for question in questions:
-        question["_id"] = str(question["_id"])
-        
-        if "date" in question and isinstance(question["date"], datetime):
-            question["date"] = question["date"].isoformat()
-        
-        if "answers" in question and isinstance(question["answers"], list):
-            for ans in question["answers"]:
-                if isinstance(ans, dict) and "date" in ans and isinstance(ans["date"], datetime):
-                    ans["date"] = ans["date"].isoformat()
-
-    return JSONResponse(
-        status_code=200,
-        content={"message": "Preguntas del usuario obtenidas exitosamente.", "questions": questions}
-    )
-
+    
 
 @router.put("/questions/add_answer/{question_id}")
 def add_answer_to_question(question_id: str, answer: Answer):

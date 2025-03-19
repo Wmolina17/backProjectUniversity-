@@ -1,7 +1,8 @@
 from fastapi import FastAPI
-from routes import user_routes, question_routes, forum_routes, resource_routes, project_routes
+from routes import user_routes, question_routes, forum_routes, resource_routes
 from fastapi.middleware.cors import CORSMiddleware
 from database import db
+from fastapi.routing import APIRoute, APIWebSocketRoute
 
 app = FastAPI()
 
@@ -15,9 +16,8 @@ app.add_middleware(
 
 app.include_router(user_routes.router, prefix="/api")
 app.include_router(question_routes.router, prefix="/api")
-# app.include_router(forum_routes.router, prefix="/api")
+app.include_router(forum_routes.router, prefix="/api")
 # app.include_router(resource_routes.router, prefix="/api")
-# app.include_router(project_routes.router, prefix="/api")
 
 @app.get("/")
 def read_root():
