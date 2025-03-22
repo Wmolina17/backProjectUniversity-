@@ -23,6 +23,24 @@ async def get_foros():
     return forums
 
 
+@router.get("/popular_forum")
+async def get_popular_foros():
+    forums = list(db.Forums.find())
+
+    for foro in forums:
+        statdistics = (len(foro["activeUsers"]) + len(foro["messages"])) / 2
+        foro["statdistics"] = statdistics
+
+        foro["_id"] = str(foro["_id"])
+        foro["creator"]["userId"] = str(foro["creator"]["userId"])
+        foro["activeUsers"] = [{**user, "userId": str(user["userId"])} for user in foro["activeUsers"]]
+        foro["messages"] = [{**msg, "userId": str(msg["userId"])} for msg in foro["messages"]]
+
+    sorted_forums = sorted(forums, key=lambda x: x["statdistics"], reverse=True)[:10]
+
+    return sorted_forums
+
+
 @router.post("/forum")
 async def create_foro(foro: Forum):
     new_foro = foro.dict()

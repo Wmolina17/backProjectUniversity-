@@ -7,6 +7,7 @@ from datetime import datetime
 import requests
 from bson import ObjectId
 import re
+from together import Together
 
 router = APIRouter()
 
@@ -195,29 +196,25 @@ def add_like_or_dislike(data: LikeDislikeRequest):
 @router.post("/ask_ia")
 async def ask_ai(data: dict):
     API_KEY = "3b69763e9912d7a4bbe2595ad7bfdb9080123b95c6560f6480aaef2d4dfc1fb4"
-    API_URL = "https://api.together.xyz/v1/completions"
     question = data.get("question", "")
 
     if not question:
         return {"error": "No se proporcionó ninguna pregunta"}
 
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
-    }
+    client = Together(api_key=API_KEY)
 
     prompt = (
         "Responde de manera técnica y concisa en español. "
         "La respuesta debe tener menos de 500 palabras. Si se trata de código hasta 1000 máximo. "
         "La respuesta no debe tener explicaciones del pensamiento que tienes al resolver la duda. "
-        "todas las lineas de texto de la respuesta no deben tener espacios en blanco al inicio, no importa si estan bajo identacion de una lista ni nada "
+        "Todas las líneas de texto de la respuesta no deben tener espacios en blanco al inicio, no importa si están bajo indentación de una lista ni nada. "
         "Para formatear la respuesta correctamente en Markdown, sigue estrictamente estas reglas:\n\n"
         "- Usa *negrita* para destacar palabras o frases clave.\n"
-        "- Usa **mini titulos** para destacar mini titulos.\n"
+        "- Usa **mini títulos** para destacar mini títulos.\n"
         "- Usa _cursiva_ para enfatizar términos importantes.\n"
         "- Usa [texto](url) para incluir enlaces.\n"
-        "- Usa >  al inicio para citas o comentarios importantes.\n"
-        "- Usa -  al inicio para listas.\n"
+        "- Usa > al inicio para citas o comentarios importantes.\n"
+        "- Usa - al inicio para listas.\n"
         "- Para código, usa exactamente este formato sin omitir líneas:\n\n"
         "```\n"
         "[código aquí]\n"
@@ -225,20 +222,16 @@ async def ask_ai(data: dict):
         "- No dejes bloques de código abiertos. Cada bloque debe cerrarse con ```.\n\n"
         f"Pregunta: {question}\n\n"
     )
-    
-    data = {
-        "model": "deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free",
-        "prompt": prompt,
-        "max_tokens": 1000,
-        "temperature": 0.3
-    }
 
-    response = requests.post(API_URL, headers=headers, json=data)
-    response_json = response.json()
-
-    if "choices" in response_json:
-        raw_answer = response_json["choices"][0]["text"].strip()
+    try:
+        response = client.chat.completions.create(
+            model="meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=1000,
+            temperature=0.3
+        )
+        raw_answer = response.choices[0].message.content.strip()
         clean_answer = re.sub(r"<think>.*?</think>", "", raw_answer, flags=re.DOTALL).strip()
         return {"answer": clean_answer}
-    else:
-        return {"error": response_json.get("error", {}).get("message", "Error en la respuesta")}
+    except Exception as e:
+        return {"error": str(e)}

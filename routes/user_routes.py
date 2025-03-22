@@ -202,6 +202,13 @@ async def delete_account(request: DeleteAccountRequest):
     if not pwd_context.verify(request.password, user["password"]):
         raise HTTPException(status_code=401, detail="Contraseña incorrecta")
 
+    user_id = str(user["_id"])
+
     db.Users.delete_one({"_id": ObjectId(user["_id"])})
-    
+
+    db.Forums.update_many(
+        {"activeUsers.userId": user_id},
+        {"$pull": {"activeUsers": {"userId": user_id}}}
+    )
+
     return JSONResponse(status_code=200, content={"message": "Cuenta eliminada con éxito"})
