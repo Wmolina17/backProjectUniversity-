@@ -58,6 +58,24 @@ async def create_foro(foro: Forum):
     return JSONResponse(content={"message": "Foro creado con éxito", "foro": new_foro}, status_code=201)
 
 
+@router.put("/forum/{forum_id}")
+async def update_forum(forum_id: str, forum_data: dict):
+    forum = db.Forums.find_one({"_id": ObjectId(forum_id)})
+
+    if not forum:
+        raise HTTPException(status_code=404, detail="Foro no encontrado")
+
+    updated_data = {
+        "title": forum_data.get("title", forum["title"]),
+        "description": forum_data.get("description", forum["description"]),
+        "imgBase64": forum_data.get("imgBase64", forum.get("imgBase64")),
+    }
+
+    db.Forums.update_one({"_id": ObjectId(forum_id)}, {"$set": updated_data})
+
+    return JSONResponse(content={"message": "Foro actualizado con éxito"}, status_code=200)
+
+
 @router.post("/forum/add_user")
 async def add_user_to_forum(request: AddUserRequest):
     forum = db.Forums.find_one({"_id": ObjectId(request.forum_id)})
