@@ -7,6 +7,8 @@ colombia_tz = pytz.timezone("America/Bogota")
 class ActiveUser(BaseModel):
     userId: str
     name: str
+    imgBase64: Optional[str] = None
+    email: str
     
 class AddUserRequest(BaseModel):
     forum_id: str
