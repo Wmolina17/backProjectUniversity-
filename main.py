@@ -17,7 +17,7 @@ app.add_middleware(
 app.include_router(user_routes.router, prefix="/api")
 app.include_router(question_routes.router, prefix="/api")
 app.include_router(forum_routes.router, prefix="/api")
-# app.include_router(resource_routes.router, prefix="/api")
+app.include_router(resource_routes.router, prefix="/api")
 
 @app.get("/")
 def read_root():

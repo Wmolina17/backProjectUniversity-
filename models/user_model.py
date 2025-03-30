@@ -43,6 +43,7 @@ class User(BaseModel):
     activeOwnForums: List[str] = []
     activeAllForums: List[str] = []
     savedResources: List[str] = []
+    resourcesCreated: List[str] = []
 
     class Config:
         orm_mode = True
