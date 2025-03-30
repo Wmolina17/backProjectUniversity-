@@ -15,6 +15,30 @@ async def get_resources():
     return resources
 
 
+@router.get("/resources/{user_id}")
+async def get_resources_by_user(user_id: str):
+    user = db.Users.find_one({"_id": ObjectId(user_id)})
+
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    saved_ids = user.get("savedResources", [])
+    created_ids = user.get("resourcesCreated", [])
+
+    saved_object_ids = [ObjectId(res_id) for res_id in saved_ids if ObjectId.is_valid(res_id)]
+    created_object_ids = [ObjectId(res_id) for res_id in created_ids if ObjectId.is_valid(res_id)]
+
+    saved_resources = list(db.Resources.find({"_id": {"$in": saved_object_ids}}))
+    created_resources = list(db.Resources.find({"_id": {"$in": created_object_ids}}))
+
+    for resource in saved_resources + created_resources:
+        resource["_id"] = str(resource["_id"])
+
+    return {
+        "savedResources": saved_resources,
+        "createdResources": created_resources
+    }
+
 @router.post("/resources")
 async def create_resource(resource: Resource):
     resource_dict = resource.dict()

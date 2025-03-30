@@ -72,6 +72,7 @@ async def get_user_profile(id: str):
 
     saved_projects = get_documents_by_ids("Projects", user.get("savedProjects", []))
     saved_resources = get_documents_by_ids("Resources", user.get("savedResources", []))
+    created_resources = get_documents_by_ids("Resources", user.get("resourcesCreated", []))
 
     def convert_ids_to_str(documents):
         for doc in documents:
@@ -84,7 +85,8 @@ async def get_user_profile(id: str):
         "answeredQuestions": convert_ids_to_str(answered_questions),
         "activeForums": active_forums,
         "savedProjects": convert_ids_to_str(saved_projects),
-        "savedResources": convert_ids_to_str(saved_resources)
+        "savedResources": convert_ids_to_str(saved_resources),
+        "createdResources": convert_ids_to_str(created_resources)
     }
 
     return JSONResponse(
