@@ -100,7 +100,62 @@ async def add_user_to_forum(request: AddUserRequest):
         status_code=200,
         content={"message": "Usuario agregado al foro exitosamente"}
     )
+    
 
+@router.post("/forum/remove_user")
+async def remove_user_from_forum(request: AddUserRequest):
+    forum = db.Forums.find_one({"_id": ObjectId(request.forum_id)})
+
+    if not forum:
+        raise HTTPException(status_code=404, detail="Foro no encontrado")
+
+    if not any(user["userId"] == request.user.userId for user in forum["activeUsers"]):
+        raise HTTPException(status_code=400, detail="El usuario no pertenece al foro")
+
+    db.Forums.update_one(
+        {"_id": ObjectId(request.forum_id)},
+        {"$pull": {"activeUsers": {"userId": request.user.userId}}}
+    )
+
+    db.Users.update_one(
+        {"_id": ObjectId(request.user.userId)},
+        {"$pull": {"activeAllForums": str(forum["_id"])}}
+    )
+
+    return JSONResponse(
+        status_code=200,
+        content={"message": "Usuario eliminado del foro exitosamente"}
+    )
+    
+
+@router.post("/forum/remove_forum")
+async def remove_forum(request: AddUserRequest):
+    forum = db.Forums.find_one({"_id": ObjectId(request.forum_id)})
+
+    if not forum:
+        raise HTTPException(status_code=404, detail="Foro no encontrado")
+
+    if forum["creator"]["userId"] != request.user.userId:
+        raise HTTPException(status_code=403, detail="Solo el creador puede eliminar el foro")
+
+    db.Forums.delete_one({"_id": ObjectId(request.forum_id)})
+
+    for user in forum.get("activeUsers", []):
+        db.Users.update_one(
+            {"_id": ObjectId(user["userId"])},
+            {"$pull": {"activeAllForums": str(forum["_id"])}}
+        )
+
+    db.Users.update_one(
+        {"_id": ObjectId(forum["creator"]["userId"])},
+        {"$pull": {"activeOwnForums": str(forum["_id"])}}
+    )
+
+    return JSONResponse(
+        status_code=200,
+        content={"message": "Foro eliminado y usuarios actualizados exitosamente"}
+    )
+    
 
 @router.websocket("/ws/{foro_id}")
 async def websocket_endpoint(websocket: WebSocket, foro_id: str):
