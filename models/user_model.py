@@ -44,6 +44,7 @@ class User(BaseModel):
     activeAllForums: List[str] = []
     savedResources: List[str] = []
     resourcesCreated: List[str] = []
+    jwtoken: str
 
     class Config:
         orm_mode = True

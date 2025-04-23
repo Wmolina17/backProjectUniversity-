@@ -14,6 +14,7 @@ from typing import List
 from passlib.context import CryptContext
 from fastapi.responses import JSONResponse
 from bson import ObjectId
+from jwt_utils import crear_token
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -24,20 +25,26 @@ async def register_user(user: User):
 
     user_dict = user.dict(exclude={"_id"})
     hashed_password = pwd_context.hash(user.password)
-    user_dict = user.dict(exclude={"password"})
     user_dict["password"] = hashed_password
-    
+
     result = db.Users.insert_one(user_dict)
+    user_id = str(result.inserted_id)
 
-    if result.inserted_id:
-        user_dict["_id"] = str(result.inserted_id)
+    token = crear_token({"user_id": user_id, "email": user.email})
 
-        return JSONResponse(
-            status_code=200,
-            content={"message": "Usuario registrado exitosamente", "user": user_dict}
-        )
+    db.Users.update_one({"_id": result.inserted_id}, {"$set": {"jwtoken": token}})
+    user_dict["_id"] = user_id
+    user_dict["jwtoken"] = token
 
-    raise HTTPException(status_code=400, detail="Error al crear usuario")
+    user_dict.pop("password", None)
+
+    return {
+        "message": "Usuario registrado exitosamente",
+        "user": user_dict,
+        "token": token
+    }
+
+
 
 @router.get("/profile/{id}", response_model=User)
 async def get_user_profile(id: str):
@@ -100,6 +107,10 @@ async def verify_if_user_exist(user: VerifyEmail):
 
     if user_data:
         user_data["_id"] = str(user_data["_id"])
+        token = crear_token({"user_id": user_data["_id"], "email": user_data["email"]})
+        db.Users.update_one({"email": user.email}, {"$set": {"jwtoken": token}})
+        user_data["jwtoken"] = token
+        user_data["password"] = None
         
         return JSONResponse(
             status_code=200,
@@ -111,24 +122,23 @@ async def verify_if_user_exist(user: VerifyEmail):
         content={"exists": False, "user": None}
     )
 
-
 @router.post("/login")
 async def login(user_data: LoginRequest):
     user = db.Users.find_one({"email": user_data.email})
     
-    if not user:
-        raise HTTPException(status_code=401, detail="Usuario no encontrado")
-
-    if not pwd_context.verify(user_data.password, user["password"]):
-        raise HTTPException(status_code=401, detail="Contraseña incorrecta")
+    if not user or not pwd_context.verify(user_data.password, user["password"]):
+        raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
     user["_id"] = str(user["_id"])
+    token = crear_token({"user_id": user["_id"], "email": user["email"]})
 
-    return JSONResponse(
-        status_code=200,
-        content={"message": "Login exitoso", "user": user}
-    )
-    
+    db.Users.update_one({"_id": ObjectId(user["_id"])}, {"$set": {"jwtoken": token}})
+    user["jwtoken"] = token
+
+    return {
+        "message": "Login exitoso",
+        "user": user,
+    }
     
 @router.post("/update_user")
 async def updateUser(user_data: UpdateUserModel):

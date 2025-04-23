@@ -26,6 +26,7 @@ class Question(BaseModel):
     date: datetime
     tags: List[str] = []
     answers: List[Answer] = {}
+    isReceivingAnswers: bool = True
 
     class Config:
         orm_mode = True

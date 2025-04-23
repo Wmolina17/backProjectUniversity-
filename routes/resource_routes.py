@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Body
 from database import db
 from models.resource_model import Resource
 from models.user_model import User
@@ -38,6 +38,43 @@ async def get_resources_by_user(user_id: str):
         "savedResources": saved_resources,
         "createdResources": created_resources
     }
+    
+    
+@router.put("/resources/{resource_id}")
+async def update_resource(resource_id: str, data: dict = Body(...)):
+    if not ObjectId.is_valid(resource_id):
+        raise HTTPException(status_code=400, detail="ID de recurso inválido")
+
+    existing = db.Resources.find_one({"_id": ObjectId(resource_id)})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Recurso no encontrado")
+
+    update_result = db.Resources.update_one(
+        {"_id": ObjectId(resource_id)},
+        {"$set": data}
+    )
+
+    if update_result.modified_count == 0:
+        return {"message": "No se realizaron cambios, el recurso ya estaba actualizado"}
+
+    updated_resource = db.Resources.find_one({"_id": ObjectId(resource_id)})
+    updated_resource["_id"] = str(updated_resource["_id"])
+
+    return {"message": "Recurso actualizado correctamente", "resource": updated_resource}
+
+
+@router.delete("/resources/{resource_id}")
+async def delete_resource(resource_id: str):
+    if not ObjectId.is_valid(resource_id):
+        raise HTTPException(status_code=400, detail="ID de recurso inválido")
+
+    result = db.Resources.delete_one({"_id": ObjectId(resource_id)})
+
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Recurso no encontrado")
+
+    return {"message": "Recurso eliminado correctamente"}
+
 
 @router.post("/resources")
 async def create_resource(resource: Resource):

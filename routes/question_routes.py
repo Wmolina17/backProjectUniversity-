@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Body
 from fastapi.responses import JSONResponse
 from database import db
 from models.question_model import Question, Answer, LikeDislikeRequest
@@ -49,6 +49,43 @@ def get_all_questions():
         status_code=200,
         content={"message": "Preguntas obtenidas exitosamente.", "questions": questions_list}
     )
+
+
+@router.put("/questions/{question_id}")
+def update_question(question_id: str, data: dict = Body(...)):
+    if not ObjectId.is_valid(question_id):
+        raise HTTPException(status_code=400, detail="ID de pregunta inválido")
+
+    existing = db.Questions.find_one({"_id": ObjectId(question_id)})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Pregunta no encontrada")
+
+    db.Questions.update_one(
+        {"_id": ObjectId(question_id)},
+        {"$set": data}
+    )
+
+    updated_question = db.Questions.find_one({"_id": ObjectId(question_id)})
+    updated_question["_id"] = str(updated_question["_id"])
+
+    return {
+        "message": "Pregunta actualizada correctamente",
+        "question": updated_question
+    }
+
+
+@router.delete("/questions/{question_id}")
+def delete_question(question_id: str):
+    if not ObjectId.is_valid(question_id):
+        raise HTTPException(status_code=400, detail="ID de pregunta inválido")
+
+    question = db.Questions.find_one({"_id": ObjectId(question_id)})
+    if not question:
+        raise HTTPException(status_code=404, detail="Pregunta no encontrada")
+
+    db.Questions.delete_one({"_id": ObjectId(question_id)})
+
+    return {"message": "Pregunta eliminada correctamente"}
 
     
 @router.post("/add_question")

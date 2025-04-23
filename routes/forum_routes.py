@@ -168,17 +168,22 @@ async def websocket_endpoint(websocket: WebSocket, foro_id: str):
 
     foro = db.Forums.find_one({"_id": ObjectId(foro_id)}, {"messages": 1})
     messages = foro.get("messages", []) if foro else []
-    
+
     for msg in messages:
         if isinstance(msg.get("date"), datetime):
             msg["date"] = msg["date"].isoformat()
-                
-    await websocket.send_json({"previous_messages": messages})
+
+    try:
+        await websocket.send_json({"previous_messages": messages})
+    except Exception:
+        await websocket.close()
+        active_connections[foro_id].remove(websocket)
+        return
 
     try:
         while True:
             data = await websocket.receive_json()
-            
+
             if "respondTo" in data and data["respondTo"] is not None:
                 data["respondTo"]["userId"] = str(data["respondTo"]["userId"])
 
@@ -194,8 +199,16 @@ async def websocket_endpoint(websocket: WebSocket, foro_id: str):
                 {"$push": {"messages": message_data}}
             )
 
+            still_active = []
             for connection in active_connections[foro_id]:
-                await connection.send_json(message_data)
+                try:
+                    await connection.send_json(message_data)
+                    still_active.append(connection)
+                except Exception:
+                    continue
+
+            active_connections[foro_id] = still_active
 
     except WebSocketDisconnect:
-        active_connections[foro_id].remove(websocket)
+        if websocket in active_connections[foro_id]:
+            active_connections[foro_id].remove(websocket)
