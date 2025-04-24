@@ -6,6 +6,6 @@ pydantic[email]
 websockets
 passlib[bcrypt]
 requests
-bson
 pytz
 together
+python-jose

@@ -44,7 +44,27 @@ class User(BaseModel):
     activeAllForums: List[str] = []
     savedResources: List[str] = []
     resourcesCreated: List[str] = []
-    jwtoken: str
-
+    jwtoken: str = None
+    
     class Config:
         orm_mode = True
+
+class UserPublic(BaseModel):
+    fullname: str
+    phone: str
+    country: str
+    studyArea: str
+    email: str
+    imgBase64: Optional[str] = None
+    activeQuestions: list = []
+    answeredQuestions: list = []
+    activeOwnForums: list = []
+    activeAllForums: list = []
+    savedResources: list = []
+    resourcesCreated: list = []
+    jwtoken: str
+
+class RegisterResponse(BaseModel):
+    message: str
+    user: UserPublic
+    token: str

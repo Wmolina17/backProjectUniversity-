@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from database import db
-from models.user_model import User
+from models.user_model import User, RegisterResponse
 from models.forum_model import Forum
 from models.resource_model import Resource
 from models.question_model import Question
@@ -18,7 +18,7 @@ from jwt_utils import crear_token
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-@router.post("/register_user", response_model=User)
+@router.post("/register_user", response_model=RegisterResponse)
 async def register_user(user: User):
     if db.Users.find_one({"email": user.email}):
         raise HTTPException(status_code=400, detail="El email ya está registrado")
@@ -43,8 +43,6 @@ async def register_user(user: User):
         "user": user_dict,
         "token": token
     }
-
-
 
 @router.get("/profile/{id}", response_model=User)
 async def get_user_profile(id: str):
